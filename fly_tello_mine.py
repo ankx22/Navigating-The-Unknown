@@ -155,7 +155,11 @@ try:
     current_path = os.path.abspath(__file__)
     current_path = current_path.replace("fly_tello_mine.py","")
 
-    
+    folders_list = ["center", "flow", "flow_outputs", "frames", "frames_thread"]
+    for folder in folders_list:
+        folder_path = os.path.join(current_path, folder)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help="restore checkpoint")
@@ -181,7 +185,7 @@ try:
     drone.streamon()
     drone.takeoff()
     time.sleep(2)
-    drone.go_xyz_speed(0,0,30,45)
+    drone.go_xyz_speed(0,0,40,45)
     time.sleep(2)
     for j in range(0, 7): # Ignores black frames
         frame1 = drone.get_frame_read().frame
@@ -194,7 +198,7 @@ try:
     # Go to a initial location
     # speed = 45
     image_center = np.array([480,360])
-    tol = 30
+    tol = 250
     runs = 0
     framei = 0
     flowi = 0
@@ -285,7 +289,7 @@ try:
 
         #-----Visual servoing algo------------------
         if np.linalg.norm(average_center-image_center)<=tol:
-            drone.go_xyz_speed(200,0,0,90)
+            drone.go_xyz_speed(400,0,0,90)
             time.sleep(3)
             drone.land()
             print(centers_dict)
@@ -298,16 +302,29 @@ try:
         #     z_command = 20
         # else:
         #     z_command = -20
-        conversion_factor = 0.5
+        conversion_factor = 0.20
         if image_center[0] - average_center[0]>0:
             y_command = int(conversion_factor*(abs(image_center[0] - average_center[0])))
+            if y_command < 10:
+                drone.go_xyz_speed(400,0,0,95)
+                drone.land()
+            else:
+                # drone.go_xyz_speed(0,y_command,0,45)
+                drone.move_left(y_command)
         else:
             y_command = -int(conversion_factor*(abs(image_center[0] - average_center[0])))
+            if y_command > 10:
+                drone.go_xyz_speed(500,0,0,95)
+                drone.land()
+            else:
+                # drone.go_xyz_speed(0,y_command,0,45)
+                drone.move_right(-y_command)
         if image_center[1] - average_center[1]>0:
             z_command = int(conversion_factor*(abs(image_center[1] - average_center[1])))
         else:
             z_command = -int(conversion_factor*(abs(image_center[1] - average_center[1])))
-        drone.go_xyz_speed(0,y_command,z_command,45)
+        print(f"y command is: {int(conversion_factor*(abs(image_center[0] - average_center[0])))}")
+        # drone.go_xyz_speed(0,y_command,0,45)
         time.sleep(3)
 except KeyboardInterrupt:
     # drone.land()
