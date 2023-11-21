@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from threading import Thread
 from djitellopy import Tello
 
-sys.path.append('core') # This is in raft folder
+sys.path.append('RAFT/core') # This is in raft folder
 
 from raft import RAFT #in RAFT folder
 from utils import flow_viz #in RAFT folder
