@@ -126,9 +126,9 @@ try:
     print('Temperature, ', drone.get_temperature())
 
     drone.streamon()
+    Thread(target=recordWorker).start()
     drone.takeoff()
     time.sleep(2)
-    # Thread(target=recordWorker).start()
     drone.go_xyz_speed(0,0,40,45)
     time.sleep(2)
     for j in range(0, 7): # Ignores black frames
