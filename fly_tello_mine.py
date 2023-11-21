@@ -74,7 +74,7 @@ def postprocess(i,current_path,image_path):
     blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 1)
     # print("statement 1")
     # Use adaptive thresholding to get a binary image
-    adaptive_thresh = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    adaptive_thresh = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 19, 2)
     # print("statement 2")
     # Use Canny edge detection
     edges = cv2.Canny(adaptive_thresh, 50, 150)
@@ -154,6 +154,8 @@ def postprocess(i,current_path,image_path):
 try:
     current_path = os.path.abspath(__file__)
     current_path = current_path.replace("fly_tello_mine.py","")
+
+    
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help="restore checkpoint")
@@ -296,7 +298,7 @@ try:
         #     z_command = 20
         # else:
         #     z_command = -20
-        conversion_factor = 0.25
+        conversion_factor = 0.5
         if image_center[0] - average_center[0]>0:
             y_command = int(conversion_factor*(abs(image_center[0] - average_center[0])))
         else:
