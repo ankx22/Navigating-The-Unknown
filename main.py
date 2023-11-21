@@ -21,7 +21,6 @@ from utils.utils import InputPadder #in RAFT folder
 DEVICE = 'cuda'
 ######-NN Related functions#######################################
 def load_image(imfile):
-    # img = np.array(Image.open(imfile)).astype(np.uint8)
     img = torch.from_numpy(imfile).permute(2, 0, 1).float()
     return img[None].to(DEVICE)
 
@@ -33,27 +32,6 @@ def recordWorker():
         filename = current_path + str("/frames_thread/") + f"frame{j}.png"
         cv2.imwrite(filename, frame)
         j = j+1
-# def printodo():# Save the odometry of the drone
-#   odometry = []
-#   while True:
-#     with open('odometry.csv', mode='w', newline='') as file:
-#         writer = csv.DictWriter(file, filednames = [ 'mpry', 'baro', 'bat', 'mid', 'h', 'agz', 'temph', 'vgz', 'roll', 'agy', 'yaw', 'pitch', 'vgy', 'time', 'vgx', 'templ', 'agx', 'tof'])
-#         writer.writeheader()
-#         writer.writerow(drone.get_current_state())
-#     # odometry.append(tello.get_current_state())
-#     print(drone.get_current_state())
-#---------------------------------------------------------------------------
-#----------Execute visual servoing------------------------------
-# def visual_servo(tello):
-#     # tello.streamon()
-#     time.sleep(2)
-#     # create and start the movement thread
-#     # Thread(target=recordWorker).start()
-#     # Thread(target=printodo).start()
-#     speed = 45
-#     tello.go_xyz_speed(0,0,30,speed)
-#     time.sleep(2)
-#     tello.go_xyz_speed(0,0,-30,speed)
 
 #-################--Post processing-#######################
 # Helper function to calculate the area of a contour
@@ -72,24 +50,14 @@ def postprocess(i,current_path,image_path):
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Step 1: Noise reduction with Gaussian blur
     blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 1)
-    # print("statement 1")
     # Use adaptive thresholding to get a binary image
     adaptive_thresh = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 19, 2)
-    # print("statement 2")
     # Use Canny edge detection
     edges = cv2.Canny(adaptive_thresh, 50, 150)
-    # print("statement 3")
     # Dilate the edges to close the gaps
     dilated_edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
-    print("statement 4")
     # Apply closing to fill in gaps
     closed_edges = cv2.morphologyEx(dilated_edges, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
-
-    # # Step 3: Morphological operations to remove small objects (minor gaps)
-
-    # cv2.imshow('binary_image',closed_edges)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
 
     # Step 4: Find contours of the remaining objects (gaps)
     contours, hierarchy = cv2.findContours(closed_edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -120,42 +88,6 @@ def postprocess(i,current_path,image_path):
                 cv2.circle(image, (cX, cY), 7, (255, 255, 255), -1)
                 print("The centroid of the largest contour detected is:", cX, ",", cY)
 #---------------------------------------------------------------------------------
-    # # Step 2: Apply Otsu's method to perform thresholding
-    # ret, binary_image = cv2.threshold(blurred_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    # # Step 3: Morphological operations to remove small objects (minor gaps)
-    # # Define the structuring element
-    # kernel = np.ones((3, 3), np.uint8)
-    # cleaned_image = cv2.morphologyEx(binary_image, cv2.MORPH_OPEN, kernel, iterations=2)
-
-    # # Step 4: Find contours of the remaining objects (gaps)
-    # contours, hierarchy = cv2.findContours(cleaned_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # # Step 5: Calculate the area of each contour to find the largest one
-    # largest_area = 0
-    # largest_contour = None
-    # for contour in contours:
-    #     area = contour_area(contour)
-    #     if area > largest_area:
-    #         largest_area = area
-    #         largest_contour = contour
-    # # cleaned_image = (cleaned_image * 255).astype(np.uint8)
-    # # cleaned_image = cv2.cvtColor(cleaned_image, cv2.COLOR_GRAY2RGB)
-    # # Draw the largest contour and centroid if it exists
-    # if largest_contour is not None:
-    #     # Draw the largest contour
-    #     cv2.drawContours(image, [largest_contour], -1, (0, 255, 0), 3)
-
-    #     # Calculate the centroid of the contour
-    #     M = cv2.moments(largest_contour)
-    #     if M["m00"] != 0:
-    #         cX = int(M["m10"] / M["m00"])
-    #         cY = int(M["m01"] / M["m00"])
-    #         cv2.circle(image, (cX, cY), 7, (0, 0, 255), -1)
-    #         print("The centroid of the gap detected is:", cX, ",", cY)
-    #     else:
-    #         print("Can't compute centroid as contour area is zero.")
-#------------------------------------------------------------------------
     filepath = current_path + f"/center/frame{i:03d}.png"
     cv2.imwrite(filepath,image)
 
@@ -164,7 +96,7 @@ def postprocess(i,current_path,image_path):
 
 try:
     current_path = os.path.abspath(__file__)
-    current_path = current_path.replace("fly_tello_mine.py","")
+    current_path = current_path.replace("test.py","")
 
     folders_list = ["center", "flow", "flow_outputs", "frames", "frames_thread"]
     for folder in folders_list:
@@ -202,13 +134,6 @@ try:
     for j in range(0, 7): # Ignores black frames
         frame1 = drone.get_frame_read().frame
 
-
-    # visual_servo(drone)
-    # time.sleep(2)
-    
-
-    # Go to a initial location
-    # speed = 45
     image_center = np.array([480,360])
     tol = 200 # 200, 250
     runs = 0
@@ -229,11 +154,6 @@ try:
                 time.sleep(2)
                 drone.move_down(20)
                 time.sleep(1.3)
-                # drone.move_left(20)
-                # time.sleep(1.3)
-                # drone.move_right(20)
-                # time.sleep(1)
-                #-------------------------------
                 #----Reading two frames---------
                 print("Reading frame 1")
                 frame1 = drone.get_frame_read().frame
@@ -253,8 +173,6 @@ try:
                 filename = current_path + str("/frames/") + f"frame{framei:03d}.png"
                 cv2.imwrite(filename, frame2)
                 frame2 = cv2.imread(filename)
-                # print("shape of frame1",frame1.shape)
-                # print("shape of frame2",frame2.shape)
                 #-----------------------------------------
                 #-------Get optical flow and do post-processing------------------
                 with torch.no_grad():
@@ -277,25 +195,15 @@ try:
                     image_path = current_path+str("/flow/")+f"frame{flowi:03d}.png"
                     cv2.imwrite(image_path,flo)
                     print("saved the flow",flowi)
-                    # drone.send_keepalive() 
                     
                     cX, cY = postprocess(flowi,current_path,image_path)
                     center_list.append([cX,cY])
                     frame_no+=1
                     flowi+=1
                     framei+=1
-                    # time.sleep(0.5)
-                    # drone.go_xyz_speed(0,0,-12,speed)
-                    
-                    # import matplotlib.pyplot as plt
-                    # plt.imshow(img_flo / 255.0)
-                    # plt.show()
-                    # speed = 45
-                    # drone.go_xyz_speed(0,0,30,speed)
             except Exception as error:
                 print(f"An error occurred:{type(error).__name__} - {error}")
                 continue
-        # drone.send_keepalive()
         runs += 1
         centers_dict[f"run{runs}"] = center_list
 
@@ -310,20 +218,16 @@ try:
             drone.land()
             print(centers_dict)
             break
-        # if image_center[0] - average_center[0]>0:
-        #     y_command = 20
-        # else:
-        #     y_command = -20
-        # if image_center[1] - average_center[1]>0:
-        #     z_command = 20
-        # else:
-        #     z_command = -20
+  
         conversion_factor = 0.20 # 0.20, 0.18, 0.15
         if image_center[0] - average_center[0]>0:
             y_command = int(conversion_factor*(abs(image_center[0] - average_center[0])))
             if y_command < 10:
                 drone.go_xyz_speed(400,0,0,95)
                 drone.land()
+            elif 10 < y_command < 20:
+                drone.go_xyz_speed(0,20,0,45)
+
             else:
                 drone.go_xyz_speed(0,y_command,0,45)
                 # drone.move_left(y_command)
@@ -332,6 +236,8 @@ try:
             if y_command > 10:
                 drone.go_xyz_speed(500,0,0,95)
                 drone.land()
+            elif 10 < y_command < 20:
+                drone.go_xyz_speed(0,-20,0,45)
             else:
                 drone.go_xyz_speed(0,y_command,0,45)
                 # drone.move_right(-y_command)
@@ -340,24 +246,12 @@ try:
         else:
             z_command = -int(conversion_factor*(abs(image_center[1] - average_center[1])))
         print(f"y command is: {int(conversion_factor*(abs(image_center[0] - average_center[0])))}")
-        # drone.go_xyz_speed(0,y_command,0,45)
         time.sleep(3)
+        
 except KeyboardInterrupt:
-    # drone.land()
     # HANDLE KEYBOARD INTERRUPT AND STOP THE DRONE COMMANDS
     print('keyboard interrupt')
     drone.emergency()
     drone.land()
     drone.emergency()
     drone.end()
-
-# Get the waypoints sent to the drone properly
-# Z axis is not reliable
-# Check all axis once (drone, camera, world)
-# Use map instead of window lenght
-#--------------------------------------
-# Automate the map file reading
-# Tuning parameters
-# Need continuous frames for good video
-# Change window config to check robustness
-# Good visualizations (best)
