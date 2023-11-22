@@ -2,11 +2,14 @@ import cv2
 import numpy as np
 
 # Helper function to calculate the area of a contour
+
+
 def contour_area(contour):
     return cv2.contourArea(contour)
 
+
 # Load the image
-image_path = r"/home/pear/Downloads/Navigating-The-Unknown/flow/frame005.png"
+image_path = r"C:\Users\ankit\OneDrive\Desktop\Navigating-The-Unknown\output4\flow\frame000.png"
 image = cv2.imread(image_path)
 
 # If the image has an alpha channel, remove it
@@ -23,7 +26,7 @@ blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 1)
 # ret, binary_image = cv2.threshold(blurred_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
 # Use adaptive thresholding to get a binary image
-adaptive_thresh = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+adaptive_thresh = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                         cv2.THRESH_BINARY_INV, 19, 2)
 
 # Use Canny edge detection
@@ -33,25 +36,39 @@ edges = cv2.Canny(adaptive_thresh, 50, 150)
 dilated_edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
 
 # Apply closing to fill in gaps
-closed_edges = cv2.morphologyEx(dilated_edges, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
+closed_edges = cv2.morphologyEx(
+    dilated_edges, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
 
-# # Step 3: Morphological operations to remove small objects (minor gaps)
+# Step 3: Morphological operations to remove small objects (minor gaps)
 
-cv2.imshow('binary_image',closed_edges)
+cv2.imshow('binary_image', closed_edges)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 # Step 4: Find contours of the remaining objects (gaps)
-contours, hierarchy = cv2.findContours(closed_edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-
+contours, hierarchy = cv2.findContours(
+    closed_edges.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+newlist_contours = contours
 # Sort contours by area and get the largest one
 contours = sorted(contours, key=cv2.contourArea, reverse=True)[:1]
+newlist_contours = sorted(
+    newlist_contours, key=cv2.contourArea, reverse=True)[:1]
+max_contour = newlist_contours[0]
+
+# Find the convex hull object for each contour
+hull_list = []
+for i in range(len(contours)):
+    hull = cv2.convexHull(contours[i])
+    hull_list.append(hull)
+hulls = sorted(hull_list, key=cv2.contourArea, reverse=True)[:1]
 
 # Draw the largest contour and centroid if it exists
 for contour in contours:
-    if cv2.contourArea(contour) > 100:  # Threshold to filter small contours
+    # Threshold to filter small contours (tunable)
+    if cv2.contourArea(contour) > 100:
         cv2.drawContours(image, [contour], -1, (0, 255, 0), 3)
+        cv2.drawContours(image, [max_contour], -1, (0, 255, 0), 3)
+        cv2.drawContours(image, hulls, -1, (0, 0, 255), 3)
         M = cv2.moments(contour)
         if M["m00"] != 0:
             cX = int(M["m10"] / M["m00"])
@@ -60,9 +77,7 @@ for contour in contours:
             print("The centroid of the largest contour detected is:", cX, ",", cY)
 
 # Save the image with the drawn contour and centroid
-output_path = r"/home/pear/Downloads/Navigating-The-Unknown/frame.png"
+output_path = r"C:\Users\ankit\OneDrive\Desktop\Navigating-The-Unknown\frame.png"
 
 cv2.imwrite(output_path, image)
-
-
 print(f"Image saved at {output_path}")
